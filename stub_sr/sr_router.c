@@ -123,7 +123,7 @@ void handle_ip_packet(struct sr_instance *sr,
     printf("IP Source: %x\n", ip_t);
     */
     printf(":: Placing Source's Ethernet(MAC) and IP Address in Cache...\n");
-    struct sr_arpreq *cached_arp_request = sr_arpcache_insert( &(sr->cache), (unsigned char*)addr, ip_t);
+    sr_arpcache_insert( &(sr->cache), (unsigned char*)addr, ip_t);
     sr_arpcache_dump( &(sr->cache));
 
     sr_ip_hdr_t *original_ip_header = extract_ip_header(packet);
