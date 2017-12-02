@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include <string.h>
+#include <arpa/inet.h>
 #include "sr_arpcache.h"
 #include "sr_router.h"
 #include "sr_if.h"
@@ -114,6 +115,15 @@ struct sr_arpreq *sr_arpcache_insert(struct sr_arpcache *cache,
 {
     pthread_mutex_lock(&(cache->lock));
 
+    /* Check if its already in Cache */
+    struct sr_arpentry* find = NULL;
+    if ( (find = sr_arpcache_lookup(cache, ip)) != NULL){
+      printf("MAC and IP are already in cache (not adding)\n");
+      free(find);
+      pthread_mutex_unlock(&(cache->lock));
+      return NULL;
+    }
+
     struct sr_arpreq *req, *prev = NULL, *next = NULL;
     for (req = cache->requests; req != NULL; req = req->next) {
         if (req->ip == ip) {
@@ -194,14 +204,18 @@ void sr_arpreq_destroy(struct sr_arpcache *cache, struct sr_arpreq *entry)
 /* Prints out the ARP table. */
 void sr_arpcache_dump(struct sr_arpcache *cache)
 {
-    fprintf(stderr, "\nMAC            IP         ADDED                      VALID\n");
-    fprintf(stderr, "-----------------------------------------------------------\n");
+    fprintf(stderr, "\nMAC                 IP                       ADDED                      VALID\n");
+    fprintf(stderr, "-------------------------------------------------------------------------------\n");
 
     int i;
     for (i = 0; i < SR_ARPCACHE_SZ; i++) {
         struct sr_arpentry *cur = &(cache->entries[i]);
         unsigned char *mac = cur->mac;
-        fprintf(stderr, "%.1x%.1x%.1x%.1x%.1x%.1x   %.8x   %.24s   %d\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], ntohl(cur->ip), ctime(&(cur->added)), cur->valid);
+	struct in_addr ip_addr;
+	ip_addr.s_addr = cur->ip;
+        fprintf(stderr, "%.2x:%.2x:%.2x:%.2x:%.2x:%.2x   %s (%.8x)   %.24s   %d\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5], inet_ntoa(ip_addr), ntohl(cur->ip), ctime(&(cur->added)), cur->valid);
+	if ( cur->added == 0 )
+	  break;
     }
 
     fprintf(stderr, "\n");
