@@ -147,14 +147,14 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    if(template != NULL && strcmp(rtable, "rtable.vrhost") == 0) { /* we've recv'd the rtable now, so read it in */
+    if(template != NULL/* && strcmp(rtable, "rtable.vrhost") == 0*/) { /* we've recv'd the rtable now, so read it in */
         Debug("Connected to new instantiation of topology template %s\n", template);
         sr_load_rt_wrap(&sr, "rtable.vrhost");
     }
-    else {
-      /* Read from specified routing table */
+   /* else {
+      * Read from specified routing table 
       sr_load_rt_wrap(&sr, rtable);
-    }
+    }*/
 
     /* call router init (for arp subsystem etc.) */
     sr_init(&sr);

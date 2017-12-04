@@ -75,7 +75,7 @@ int sr_load_rt(struct sr_instance* sr,const char* filename)
             return -1; 
         }
         if( clear_routing_table == 0 ){
-            printf("Loading routing table from server, clear local routing table.\n");
+            //printf("Loading routing table from server, clear local routing table.\n");
             sr->routing_table = 0;
             clear_routing_table = 1;
         }

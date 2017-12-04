@@ -158,7 +158,7 @@ void print_hdrs(uint8_t *buf, uint32_t length)
     }
 
     uint16_t ethtype = ethertype(buf);
-    print_hdr_eth(buf);
+    //print_hdr_eth(buf);
 
     if (ethtype == ethertype_ip) { /* IP */
         minlength += sizeof(sr_ip_hdr_t);
@@ -167,7 +167,7 @@ void print_hdrs(uint8_t *buf, uint32_t length)
             return;
         }
 
-        print_hdr_ip(buf + sizeof(sr_ethernet_hdr_t));
+       // print_hdr_ip(buf + sizeof(sr_ethernet_hdr_t));
 
     } else if (ethtype == ethertype_arp) { /* ARP */
         minlength += sizeof(sr_arp_hdr_t);

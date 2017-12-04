@@ -79,8 +79,8 @@ void sr_handlepacket(struct sr_instance *sr,
     assert(sr);
     assert(packet);
     assert(interface);
-    printf("----------------------------------------------------------\n");
-    printf("*** -> Received packet of length %d \n", len);
+    printf(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+    //printf("*** -> Received packet of length %d \n", len);
 
 
     //print_hdrs(packet, len);
@@ -128,18 +128,18 @@ void handle_ip_packet(struct sr_instance *sr,
     }
     /* Check if packet is destined for one of my interfaces */
     struct sr_if *destination_interface = get_interface_from_ip(sr, original_ip_header->ip_dst);
-    printf("~~Destination_Interface: %s\n", destination_interface->name);
+    //printf("~~Destination_Interface: %s\n", destination_interface->name);
     if (destination_interface) {
       printf("We are the target -- discarding packet...\n");
     } else {  /* Packet was not for one of my interfaces */
-        fprintf(stderr, "Received packet on interface [[%s]] that was not for me\n", interface);
+        fprintf(stderr, "Received packet on interface [%s] that was not for me\n", interface);
 
-	printf("== Sender IP %x | Dest IP %x\n", original_ip_header->ip_src, original_ip_header->ip_dst);
+	//printf("== Sender IP %x | Dest IP %x\n", original_ip_header->ip_src, original_ip_header->ip_dst);
 
         /* Packet is not for this router and has valid TTL. Forward the packet. */
-        fprintf(stderr, "Forwarding packet that was received on interface %s\n", interface);
+        //fprintf(stderr, "Forwarding packet that was received on interface %s\n", interface);
         struct sr_rt *next_hop_ip = calculate_LPM(sr, original_ip_header->ip_dst);
-	printf("-- Next Hop IP : %x\n", next_hop_ip->dest.s_addr);
+	//printf("-- Next Hop IP : %x\n", next_hop_ip->dest.s_addr);
 
 	/* Take care of IP header misc fields */
         original_ip_header->ip_ttl--;
@@ -162,7 +162,7 @@ void handle_ip_packet(struct sr_instance *sr,
         }
 	else{
 	  /* Send ARP Request*/
-	  fprintf(stderr, "No ARP cache entry was found. Queuing an ARP request\n");
+	  fprintf(stderr, "No ARP cache entry was found. Sending an ARP request\n");
 	  struct sr_arpreq *queued_arp_req = sr_arpcache_queuereq(&(sr->cache), original_ip_header->ip_dst, packet, len, next_hop_ip->interface);
 	  handle_arpreq(sr, queued_arp_req);
 	  return;
@@ -187,7 +187,7 @@ void handle_arp_packet(struct sr_instance *sr, uint8_t *packet, unsigned int len
         if (original_arp_header->ar_tip != receiving_interface->ip) {
             return;
         }
-        fprintf(stderr, "Received ARP request on interface [[%s]]\n", interface);
+        fprintf(stderr, "Received ARP request on interface [%s]\n", interface);
         uint8_t *arp_reply = (uint8_t *) malloc(len);
         memset(arp_reply, 0, len * sizeof(uint8_t));
         sr_ethernet_hdr_t *reply_ethernet_header = extract_ethernet_header(arp_reply);
@@ -203,7 +203,7 @@ void handle_arp_packet(struct sr_instance *sr, uint8_t *packet, unsigned int len
         memcpy(reply_arp_header->ar_sha, receiving_interface->addr, ETHER_ADDR_LEN);
         reply_arp_header->ar_tip = original_arp_header->ar_sip;
         reply_arp_header->ar_sip = receiving_interface->ip;
-	printf("Sending ARP reply [[%s]]...\n",interface);
+	printf("Sending ARP reply [%s]...\n",interface);
         sr_send_packet(sr, arp_reply, len, interface);
         free(arp_reply);
     /*
