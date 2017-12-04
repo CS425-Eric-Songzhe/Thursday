@@ -76,17 +76,7 @@
         #define __BYTE_ORDER __BIG_ENDIAN
     #endif
 #endif
-#define ICMP_DATA_SIZE 28
 
-/* Structure of a generic ICMP header */
-struct sr_icmp_hdr {
-    uint8_t icmp_type;
-    uint8_t icmp_code;
-    uint16_t icmp_sum;
-    uint32_t unused;
-    uint8_t data[ICMP_DATA_SIZE];
-} __attribute__((packed)) ;
-typedef struct sr_icmp_hdr sr_icmp_hdr_t;
 
 /*
  * Structure of an internet header, naked of options.
@@ -130,11 +120,6 @@ struct sr_ethernet_hdr {
 } __attribute__((packed)) ;
 typedef struct sr_ethernet_hdr sr_ethernet_hdr_t;
 
-
-
-enum sr_ip_protocol {
-    ip_protocol_icmp = 0x0001,
-};
 
 enum sr_ethertype {
     ethertype_arp = 0x0806,

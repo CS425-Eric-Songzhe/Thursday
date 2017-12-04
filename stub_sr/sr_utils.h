@@ -39,13 +39,11 @@ void print_addr_ip_int(uint32_t ip);
 
 void print_hdr_eth(uint8_t *buf);
 void print_hdr_ip(uint8_t *buf);
-void print_hdr_icmp(uint8_t *buf);
 void print_hdr_arp(uint8_t *buf);
 
 /* prints all headers, starting from eth */
 void print_hdrs(uint8_t *buf, uint32_t length);
 
-sr_icmp_hdr_t *extract_icmp_header(uint8_t *);
 sr_ethernet_hdr_t *extract_ethernet_header(uint8_t *);
 sr_ip_hdr_t *extract_ip_header(uint8_t *);
 sr_arp_hdr_t *extract_arp_header(uint8_t *);

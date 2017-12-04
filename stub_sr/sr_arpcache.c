@@ -277,25 +277,6 @@ void *sr_arpcache_timeout(void *sr_ptr)
 void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *request)
 {
     if (difftime(time(NULL), request->sent) >= 1.0) {
-        if (request->times_sent >= 5) {
-            /* We have tried this ARP request 5 times. Send icmp3 */
-            fprintf(stderr, "ARP request timed out. Sending ICMP3.\n");
-            struct sr_packet *waiting_packet = request->packets;
-            while (waiting_packet) {
-                /* Get the interface that the packet came in on. We will send the ICMP back the way the original packet came. */
-                uint8_t *icmp_packet_outgoing_interface_eth_address = (extract_ethernet_header(waiting_packet->buf))->ether_dhost;
-                struct sr_if *outgoing_interface = get_interface_from_eth(sr, icmp_packet_outgoing_interface_eth_address);
-                if (NULL == outgoing_interface) {
-                    fprintf(stderr, "Error: Ethernet address in original packet did not match an interface on this router.\n");
-                    waiting_packet = waiting_packet->next;
-                    continue;
-                }
-                send_custom_icmp_packet(sr, waiting_packet->buf, waiting_packet->len, outgoing_interface->name, 3, 1, NULL);
-                waiting_packet = waiting_packet->next;
-            }
-            sr_arpreq_destroy(&(sr->cache), request);
-            return;
-        }
         struct sr_if *interface = sr_get_interface(sr, request->packets->iface);
         fprintf(stderr, "Sending ARP request through [[%s]]...\n",interface->name);
         int arp_packet_len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
