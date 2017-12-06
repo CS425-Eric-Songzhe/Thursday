@@ -14,10 +14,8 @@
 #include "sr_protocol.h"
 
 /*
-  This function gets called every second. For each request sent out, we keep
-  checking whether we should resend a request or destroy the arp request.
-  See the comments in the header file for an idea of what it should look like.
-*/
+ *Check if arp request needs to be deleted or resent
+ */
 void sr_arpcache_sweepreqs(struct sr_instance *sr)
 {
     struct sr_arpreq *request = (&(sr->cache))->requests;
@@ -29,10 +27,7 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr)
     }
 }
 
-/* You should not need to touch the rest of this code. */
 
-/* Checks if an IP->MAC mapping is in the cache. IP is in network byte order.
-   You must free the returned structure if it is not NULL. */
 struct sr_arpentry *sr_arpcache_lookup(struct sr_arpcache *cache, uint32_t ip)
 {
     pthread_mutex_lock(&(cache->lock));
@@ -58,12 +53,9 @@ struct sr_arpentry *sr_arpcache_lookup(struct sr_arpcache *cache, uint32_t ip)
     return copy;
 }
 
-/* Adds an ARP request to the ARP request queue. If the request is already on
-   the queue, adds the packet to the linked list of packets for this sr_arpreq
-   that corresponds to this ARP request. You should free the passed *packet.
-
-   A pointer to the ARP request is returned; it should not be freed. The caller
-   can remove the ARP request from the queue by calling sr_arpreq_destroy. */
+/* 
+ * Adds an ARP request to the ARP request queue. 
+ */
 struct sr_arpreq *sr_arpcache_queuereq(struct sr_arpcache *cache,
                                        uint32_t ip,
                                        uint8_t *packet,           /* borrowed */
@@ -105,10 +97,10 @@ struct sr_arpreq *sr_arpcache_queuereq(struct sr_arpcache *cache,
     return req;
 }
 
-/* This method performs two functions:
-   1) Looks up this IP in the request queue. If it is found, returns a pointer
-      to the sr_arpreq with this IP. Otherwise, returns NULL.
-   2) Inserts this IP to MAC mapping in the cache, and marks it valid. */
+/* 
+ * Inserts a new ARP cache entry (MAC + IP) if it's not 
+ * already there.
+ */
 struct sr_arpreq *sr_arpcache_insert(struct sr_arpcache *cache,
                                      unsigned char *mac,
                                      uint32_t ip)
@@ -159,8 +151,9 @@ struct sr_arpreq *sr_arpcache_insert(struct sr_arpcache *cache,
     return req;
 }
 
-/* Frees all memory associated with this arp request entry. If this arp request
-   entry is on the arp request queue, it is removed from the queue. */
+/* 
+ * Deletes/Removes ARP cache entry
+ */
 void sr_arpreq_destroy(struct sr_arpcache *cache, struct sr_arpreq *entry)
 {
     pthread_mutex_lock(&(cache->lock));
@@ -201,7 +194,6 @@ void sr_arpreq_destroy(struct sr_arpcache *cache, struct sr_arpreq *entry)
     pthread_mutex_unlock(&(cache->lock));
 }
 
-/* Prints out the ARP table. */
 void sr_arpcache_dump(struct sr_arpcache *cache)
 {
     fprintf(stderr, "\nMAC                 IP                       ADDED                      VALID\n");
@@ -221,7 +213,9 @@ void sr_arpcache_dump(struct sr_arpcache *cache)
     fprintf(stderr, "\n");
 }
 
-/* Initialize table + table lock. Returns 0 on success. */
+/* 
+ * Initialize table and thread lock. Return 0 if successful
+ */
 int sr_arpcache_init(struct sr_arpcache *cache)
 {
     /* Seed RNG to kick out a random entry if all entries full. */
@@ -239,14 +233,17 @@ int sr_arpcache_init(struct sr_arpcache *cache)
     return success;
 }
 
-/* Destroys table + table lock. Returns 0 on success. */
+/* 
+ * Destroys table + table lock. Returns 0 on success. 
+ */ 
 int sr_arpcache_destroy(struct sr_arpcache *cache)
 {
     return pthread_mutex_destroy(&(cache->lock)) && pthread_mutexattr_destroy(&(cache->attr));
 }
 
-/* Thread which sweeps through the cache and invalidates entries that were added
-   more than SR_ARPCACHE_TO seconds ago. */
+/* 
+ * Deletes/Removes old arp cahce entries that are now expired 
+ */
 void *sr_arpcache_timeout(void *sr_ptr)
 {
     struct sr_instance *sr = sr_ptr;
@@ -274,6 +271,9 @@ void *sr_arpcache_timeout(void *sr_ptr)
     return NULL;
 }
 
+/*
+ * Send ARP Request
+ */
 void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *request)
 {
     if (difftime(time(NULL), request->sent) >= 1.0) {

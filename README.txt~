@@ -1,0 +1,16 @@
+Eric Evans
+ericmichaelevans@email.arizona.edu
+
+Songzhe Zhu
+songzhezhu@email.arizona.edu
+
+---
+Tested Under the Following Conditions:
+- using topology 332
+- Fowarding to Servers:
+    $ wget http://172.29.12.1:16280
+    $ wget http://172.29.12.1:16280/64MB.bin
+    $ wget http://172.29.12.2:16280
+    $ wget http://172.29.12.2:16280/64MB.bin
+- Routng verified by using tcpdump
+
