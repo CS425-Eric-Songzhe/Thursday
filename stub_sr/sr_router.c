@@ -40,7 +40,7 @@ void sr_init(struct sr_instance *sr)
     assert(sr);
 
     /* Initialize cache and cache cleanup thread */
-    sr_arpcache_init(&(sr->cache));
+    init_arpcache(&(sr->cache));
 
     pthread_attr_init(&(sr->attr));
     pthread_attr_setdetachstate(&(sr->attr), PTHREAD_CREATE_JOINABLE);
@@ -48,7 +48,7 @@ void sr_init(struct sr_instance *sr)
     pthread_attr_setscope(&(sr->attr), PTHREAD_SCOPE_SYSTEM);
     pthread_t thread;
 
-    pthread_create(&thread, &(sr->attr), sr_arpcache_timeout, sr);
+    pthread_create(&thread, &(sr->attr), check_timeout_arpcache, sr);
 
     /* Add initialization code here! */
 
@@ -113,14 +113,14 @@ void handle_ip_packet(struct sr_instance *sr,
     uint8_t *addr = ethernet_header->ether_shost;
     uint32_t ip_t = extract_ip_header(packet)->ip_src;
     printf(":: Placing Source's Ethernet(MAC) and IP Address in Cache...\n");
-    sr_arpcache_insert( &(sr->cache), (unsigned char*)addr, ip_t);
-    sr_arpcache_dump( &(sr->cache));
+    add_to_arpcache( &(sr->cache), (unsigned char*)addr, ip_t);
+    dump_arpcache( &(sr->cache));
 
     sr_ip_hdr_t *original_ip_header = extract_ip_header(packet);
     /* Check IP Header cksum */
     uint16_t original_sum = original_ip_header->ip_sum;
     original_ip_header->ip_sum = 0;
-    original_ip_header->ip_sum = cksum(original_ip_header, sizeof(sr_ip_hdr_t));
+    original_ip_header->ip_sum = checksum(original_ip_header, sizeof(sr_ip_hdr_t));
     if (original_ip_header->ip_sum != original_sum) {
         fprintf(stderr, "IP Header chksum failed\n");
         original_ip_header->ip_sum = original_sum;
@@ -138,18 +138,18 @@ void handle_ip_packet(struct sr_instance *sr,
 
         /* Packet is not for this router and has valid TTL. Forward the packet. */
         //fprintf(stderr, "Forwarding packet that was received on interface %s\n", interface);
-        struct sr_rt *next_hop_ip = calculate_LPM(sr, original_ip_header->ip_dst);
+        struct sr_rt *next_hop_ip = find_best_match_in_rtable(sr, original_ip_header->ip_dst);
 	//printf("-- Next Hop IP : %x\n", next_hop_ip->dest.s_addr);
 
 	/* Take care of IP header misc fields */
         original_ip_header->ip_ttl--;
         original_ip_header->ip_sum = 0;
-        original_ip_header->ip_sum = cksum(original_ip_header, sizeof(sr_ip_hdr_t));
+        original_ip_header->ip_sum = checksum(original_ip_header, sizeof(sr_ip_hdr_t));
 	
 
 	/* Check in ARP Cache */
 	printf("##Looking-Up in ARP Cache where  <<%x>> is...\n", original_ip_header->ip_dst);
-        struct sr_arpentry *next_hop_mac = sr_arpcache_lookup(&(sr->cache), original_ip_header->ip_dst);
+        struct sr_arpentry *next_hop_mac = get_from_arpcache(&(sr->cache), original_ip_header->ip_dst);
 	/* Found MAC in ARP Cache  -- Send Packet */
         if (next_hop_mac) {
             fprintf(stderr, "ARP cache entry was found. Putting the packet on interface %s toward next hop.\n", next_hop_ip->interface);
@@ -163,7 +163,7 @@ void handle_ip_packet(struct sr_instance *sr,
 	else{
 	  /* Send ARP Request*/
 	  fprintf(stderr, "No ARP cache entry was found. Sending an ARP request\n");
-	  struct sr_arpreq *queued_arp_req = sr_arpcache_queuereq(&(sr->cache), original_ip_header->ip_dst, packet, len, next_hop_ip->interface);
+	  struct sr_arpreq *queued_arp_req = enqueue_to_arpcache(&(sr->cache), original_ip_header->ip_dst, packet, len, next_hop_ip->interface);
 	  handle_arpreq(sr, queued_arp_req);
 	  return;
 	}
@@ -211,8 +211,8 @@ void handle_arp_packet(struct sr_instance *sr, uint8_t *packet, unsigned int len
      */
     } else if (arp_op_reply == ntohs(original_arp_header->ar_op)) { /* ARP Reply */
         fprintf(stderr, "Received ARP reply on interface %s ... Caching ARP Reply\n", interface);
-        struct sr_arpreq *cached_arp_request = sr_arpcache_insert( &(sr->cache), original_arp_header->ar_sha, original_arp_header->ar_sip);
-	sr_arpcache_dump( &(sr->cache));
+        struct sr_arpreq *cached_arp_request = add_to_arpcache( &(sr->cache), original_arp_header->ar_sha, original_arp_header->ar_sip);
+	dump_arpcache( &(sr->cache));
         if (cached_arp_request) {
             fprintf(stderr, "Sending packets that were waiting on ARP reply...\n");
             struct sr_packet *waiting_packet = cached_arp_request->packets;
@@ -224,13 +224,13 @@ void handle_arp_packet(struct sr_instance *sr, uint8_t *packet, unsigned int len
                 sr_send_packet(sr, send_packet, waiting_packet->len, interface);
                 waiting_packet = waiting_packet->next;
             }
-            sr_arpreq_destroy(&(sr->cache), cached_arp_request);
+            delete_from_arpcache(&(sr->cache), cached_arp_request);
         }
     }
     return;
 }
 
-struct sr_rt *calculate_LPM(struct sr_instance *sr, uint32_t destination_ip)
+struct sr_rt *find_best_match_in_rtable(struct sr_instance *sr, uint32_t destination_ip)
 {
     struct sr_rt *routing_table_node = sr->routing_table;
     struct sr_rt *best_match = NULL;

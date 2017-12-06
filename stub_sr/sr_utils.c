@@ -9,7 +9,7 @@
 #include "assert.h"
 
 
-uint16_t cksum(const void *_data, int len)
+uint16_t checksum(const void *_data, int len)
 {
     const uint8_t *data = _data;
     uint32_t sum;

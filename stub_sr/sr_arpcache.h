@@ -39,34 +39,34 @@ struct sr_arpcache {
     pthread_mutexattr_t attr;
 };
 
-struct sr_arpentry *sr_arpcache_lookup(struct sr_arpcache *cache, uint32_t ip);
+struct sr_arpentry *get_from_arpcache(struct sr_arpcache *cache, uint32_t ip);
 
-struct sr_arpreq *sr_arpcache_queuereq(struct sr_arpcache *cache,
+struct sr_arpreq *enqueue_to_arpcache(struct sr_arpcache *cache,
                                        uint32_t ip,
                                        uint8_t *packet,        
                                        unsigned int packet_len,
                                        char *iface);
 
-struct sr_arpreq *sr_arpcache_insert(struct sr_arpcache *cache,
+struct sr_arpreq *add_to_arpcache(struct sr_arpcache *cache,
                                      unsigned char *mac,
                                      uint32_t ip);
 
-void sr_arpreq_destroy(struct sr_arpcache *cache, struct sr_arpreq *entry);
+void delete_from_arpcache(struct sr_arpcache *cache, struct sr_arpreq *entry);
 
-void sr_arpcache_dump(struct sr_arpcache *cache);
+void dump_arpcache(struct sr_arpcache *cache);
 
-int   sr_arpcache_init(struct sr_arpcache *cache);
-int   sr_arpcache_destroy(struct sr_arpcache *cache);
-void *sr_arpcache_timeout(void *cache_ptr);
+int   init_arpcache(struct sr_arpcache *cache);
+int   delete_arpcache(struct sr_arpcache *cache);
+void *check_timeout_arpcache(void *cache_ptr);
 void handle_arpreq(struct sr_instance *, struct sr_arpreq *);
-void sr_arpreq_destroy_no_lock(struct sr_arpcache *, struct sr_arpreq *);
+void delete_from_arpcache_no_lock(struct sr_arpcache *, struct sr_arpreq *);
 
 /* sr_utils.h */
 sr_arp_hdr_t *extract_arp_header(uint8_t *);
 sr_ethernet_hdr_t *extract_ethernet_header(uint8_t *);
 
 /* sr_router.h */
-struct sr_rt *calculate_LPM(struct sr_instance *, uint32_t);
+struct sr_rt *find_best_match_in_rtable(struct sr_instance *, uint32_t);
 
 /* sr_if.h */
 struct sr_if *sr_get_interface(struct sr_instance *, const char *);

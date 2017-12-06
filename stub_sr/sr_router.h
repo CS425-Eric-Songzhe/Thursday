@@ -72,7 +72,7 @@ void sr_init(struct sr_instance *);
 void sr_handlepacket(struct sr_instance *, uint8_t *, unsigned int , char *);
 void handle_ip_packet(struct sr_instance *, uint8_t *, unsigned int, char *);
 void handle_arp_packet(struct sr_instance *, uint8_t *, unsigned int, char *);
-struct sr_rt *calculate_LPM(struct sr_instance *, uint32_t);
+struct sr_rt *find_best_match_in_rtable(struct sr_instance *, uint32_t);
 
 
 /* -- sr_if.c -- */
